@@ -1,5 +1,5 @@
 public func run(source: String) {
-    let scanner = Scanner(source: source)
+    let scanner = Scanner(source)
     let tokens = scanner.scanTokens()
 
     for token in tokens {
@@ -7,7 +7,7 @@ public func run(source: String) {
     }
 }
 
-func error(line: Int, message: String) {
+func error(_ line: Int, _ message: String) {
     report(line, "", message)
 }
 

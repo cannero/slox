@@ -1,13 +1,13 @@
 enum TokenType {
   // Single-character tokens.
-  case left_paren, right_paren, left_brace, right_brace,
+  case leftParen, rightParen, leftBrace, rightBrace,
   comma, dot, minus, plus, semicolon, slash, star,
 
   // one or two character tokens.
-  bang, bang_equal,
-  equal, equal_equal,
-  greater, greater_equal,
-  less, less_equal,
+  bang, bangEqual,
+  equal, equalEqual,
+  greater, greaterEqual,
+  less, lessEqual,
 
   // literals.
   identifier, `string`, number,
