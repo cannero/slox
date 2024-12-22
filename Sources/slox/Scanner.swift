@@ -68,8 +68,8 @@ class Scanner {
         return char
     }
 
-    private func addToken(_ type: TokenType) {
-        tokens.append(Token(type: type, lexeme: currentLexeme, line: currentLine))
+    private func addToken(_ type: TokenType, _ literal: Any? = nil) {
+        tokens.append(Token(type: type, lexeme: currentLexeme, line: currentLine, literal: literal))
     }
 
     private func match(_ char: Character) -> Bool {
@@ -103,11 +103,11 @@ class Scanner {
             return
         }
 
-        //todo let strValue = currentLexeme.dropFirst()
+        let strValue = currentLexeme.dropFirst()
         // closing "
         _ = advance()
         
-        addToken(.string)
+        addToken(.string, strValue)
     }
 
     // only integers
@@ -116,7 +116,7 @@ class Scanner {
             _ = advance()
         }
 
-        addToken(.number)
+        addToken(.number, Int(currentLexeme)!)
     }
 
     private func readIdentifier() {
