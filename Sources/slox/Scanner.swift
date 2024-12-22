@@ -35,19 +35,100 @@ class Scanner {
         case "+": addToken(.plus)
         case ";": addToken(.semicolon)
         case "*": addToken(.star)
+        case "!": addToken(match("=") ? .bangEqual : .bang)
+        case "=": addToken(match("=") ? .equalEqual : .equal)
+        case "<": addToken(match("=") ? .lessEqual : .less)
+        case ">": addToken(match("=") ? .greaterEqual : .greater)
+        case "/":
+            if match("/") {
+                while peek() != "\n" && !isAtEnd {
+                    _ = advance()
+                }
+            } else {
+                addToken(.slash)
+            }
+        case " ", "\r", "\t": break
+        case "\n":
+            currentLine += 1
+        case "\"": readString()
+        case _ where char.isDigit: readNumber()
+        case _ where char.isLetter: readIdentifier()
         default:
             error(currentLine, "unknown char \(char)")
         }
     }
 
+    private func advanceIndex() {
+        currentIndex = source.index(after: currentIndex)
+    }
+
     private func advance() -> Character {
         let char = source[currentIndex]
-        currentIndex = source.index(after: currentIndex)
+        advanceIndex()
         return char
     }
 
     private func addToken(_ type: TokenType) {
         tokens.append(Token(type: type, lexeme: currentLexeme, line: currentLine))
+    }
+
+    private func match(_ char: Character) -> Bool {
+        guard !isAtEnd, source[currentIndex] == char else {
+            return false
+        }
+
+        advanceIndex()
+        return true
+    }
+
+    private func peek() -> Character? {
+        guard !isAtEnd else {
+            return nil
+        }
+
+        return source[currentIndex] 
+    }
+
+    private func readString() {
+        while peek() != "\"" && !isAtEnd {
+            if peek() == "\n" {
+                currentLine += 1
+            }
+
+            _ = advance()
+        }
+
+        if isAtEnd {
+            error(currentLine, "Unterminated string")
+            return
+        }
+
+        //todo let strValue = currentLexeme.dropFirst()
+        // closing "
+        _ = advance()
+        
+        addToken(.string)
+    }
+
+    // only integers
+    private func readNumber() {
+        while peek()?.isDigit == true {
+            _ = advance()
+        }
+
+        addToken(.number)
+    }
+
+    private func readIdentifier() {
+        while peek()?.isLetter == true || peek()?.isNumber == true || peek() == "_" {
+            _ = advance()
+        }
+
+        if let type = TokenType.keywordOrNil(word: currentLexeme) {
+            addToken(type)
+        } else {
+            addToken(.identifier)
+        }
     }
 
     private var currentLexeme: String {
@@ -57,4 +138,9 @@ class Scanner {
     private var isAtEnd: Bool {
         currentIndex >= source.endIndex
     }
+}
+
+private extension Character
+{
+    var isDigit: Bool { return "0"..."9" ~= self }
 }
