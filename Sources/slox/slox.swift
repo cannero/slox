@@ -6,9 +6,11 @@ public func run(source: String) throws {
         return
     }
     let parser = Parser(tokens)
-    let expr = try parser.parse()
+    let expr = try parser.parse()!
 
-    print(expr)
+    let interpreter = Interpreter()
+    let result = try interpreter.interpret(expression: expr)
+    print(result)
     // for token in tokens {
     //     print(token)
     // }
@@ -28,4 +30,8 @@ func error(at token: Token, message: String) {
     } else {
         report(token.line, " at '\(token.lexeme)'", message)
     }
+}
+
+func runtimeError(error: RuntimeError) {
+    print("[line \(error.token?.line ?? 0)]: \(error.message)")
 }

@@ -21,7 +21,7 @@ let splitIntoFieldTypeAndName (fields: string) =
 
 let addVisitFunction (writer: TextWriter) baseName (className, _) =
     writer.Write($$"""    func visit{{className}}{{baseName}}(_ expr: {{className}}) """)
-    writer.WriteLine($$"""-> {{baseName}}VisitorReturn""")
+    writer.WriteLine($$"""throws -> {{baseName}}VisitorReturn""")
 
 let defineVisitor (writer: TextWriter) baseName types =
     writer.WriteLine($$"""protocol {{baseName}}Visitor {""")
@@ -55,8 +55,8 @@ let defineType (writer: TextWriter) baseName (className, (fields: string)) =
     writer.WriteLine("    }")
     writer.WriteLine("")
 
-    writer.WriteLine($$"""    override func accept<V: {{baseName}}Visitor, R>(visitor: V) -> R where R == V.{{baseName}}VisitorReturn {""")
-    writer.WriteLine($$"""        visitor.visit{{className}}{{baseName}}(self)""")
+    writer.WriteLine($$"""    override func accept<V: {{baseName}}Visitor, R>(visitor: V) throws -> R where R == V.{{baseName}}VisitorReturn {""")
+    writer.WriteLine($$"""        try visitor.visit{{className}}{{baseName}}(self)""")
     writer.WriteLine("    }")
     writer.WriteLine("")
 
@@ -84,7 +84,7 @@ let defineAst baseName types =
 
     // must be a base class, implement Equatable does not work with protocol
     writer.WriteLine($$"""class {{baseName}} : Equatable {""")
-    writer.WriteLine($$"""   func accept<V: {{baseName}}Visitor, R>(visitor: V) -> R where R == V.{{baseName}}VisitorReturn {""")
+    writer.WriteLine($$"""   func accept<V: {{baseName}}Visitor, R>(visitor: V) throws -> R where R == V.{{baseName}}VisitorReturn {""")
     writer.WriteLine("        preconditionFailure(\"base class cannot be used directly\")")
     writer.WriteLine("    }")
     writer.WriteLine("")

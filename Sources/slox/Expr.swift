@@ -4,14 +4,14 @@ import Foundation
 
 protocol ExprVisitor {
     associatedtype ExprVisitorReturn
-    func visitBinaryExpr(_ expr: Binary) -> ExprVisitorReturn
-    func visitGroupingExpr(_ expr: Grouping) -> ExprVisitorReturn
-    func visitLiteralExpr(_ expr: Literal) -> ExprVisitorReturn
-    func visitUnaryExpr(_ expr: Unary) -> ExprVisitorReturn
+    func visitBinaryExpr(_ expr: Binary) throws -> ExprVisitorReturn
+    func visitGroupingExpr(_ expr: Grouping) throws -> ExprVisitorReturn
+    func visitLiteralExpr(_ expr: Literal) throws -> ExprVisitorReturn
+    func visitUnaryExpr(_ expr: Unary) throws -> ExprVisitorReturn
 }
 
 class Expr : Equatable {
-   func accept<V: ExprVisitor, R>(visitor: V) -> R where R == V.ExprVisitorReturn {
+   func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
         preconditionFailure("base class cannot be used directly")
     }
 
@@ -35,8 +35,8 @@ class Binary : Expr {
         self.right = right
     }
 
-    override func accept<V: ExprVisitor, R>(visitor: V) -> R where R == V.ExprVisitorReturn {
-        visitor.visitBinaryExpr(self)
+    override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
+        try visitor.visitBinaryExpr(self)
     }
 
     override func isEqualTo (_ other: Expr) -> Bool {
@@ -54,8 +54,8 @@ class Grouping : Expr {
         self.expression = expression
     }
 
-    override func accept<V: ExprVisitor, R>(visitor: V) -> R where R == V.ExprVisitorReturn {
-        visitor.visitGroupingExpr(self)
+    override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
+        try visitor.visitGroupingExpr(self)
     }
 
     override func isEqualTo (_ other: Expr) -> Bool {
@@ -71,8 +71,8 @@ class Literal : Expr {
         self.value = value
     }
 
-    override func accept<V: ExprVisitor, R>(visitor: V) -> R where R == V.ExprVisitorReturn {
-        visitor.visitLiteralExpr(self)
+    override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
+        try visitor.visitLiteralExpr(self)
     }
 
     override func isEqualTo (_ other: Expr) -> Bool {
@@ -90,8 +90,8 @@ class Unary : Expr {
         self.right = right
     }
 
-    override func accept<V: ExprVisitor, R>(visitor: V) -> R where R == V.ExprVisitorReturn {
-        visitor.visitUnaryExpr(self)
+    override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
+        try visitor.visitUnaryExpr(self)
     }
 
     override func isEqualTo (_ other: Expr) -> Bool {
