@@ -3,7 +3,7 @@ import slox
 
 @main
 struct slox_cliMain {
-    static func main() {
+    static func main() throws {
         guard CommandLine.arguments.count == 2 else {
             print("Usage: app file")
             exit(1)
@@ -11,7 +11,7 @@ struct slox_cliMain {
 
         let filePath = CommandLine.arguments[1]
         let contents = readFile(filePath: filePath)
-        run(source: contents)
+        try run(source: contents)
     }
 
     static func readFile(filePath: String) -> String {

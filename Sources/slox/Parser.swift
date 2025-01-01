@@ -6,7 +6,7 @@ class Parser {
     let tokens: [Token]
     var currentToken = 0
 
-    init(tokens: [Token]) {
+    init(_ tokens: [Token]) {
         self.tokens = tokens
     }
 
@@ -81,15 +81,15 @@ class Parser {
 
     private func primary() throws -> Expr {
         if match(.false) {
-            return Literal(value: false)
+            return Literal(value: .bool(false))
         }
 
         if match(.true) {
-            return Literal(value: true)
+            return Literal(value: .bool(true))
         }
 
         if match(.nil) {
-            return Literal(value: nil)
+            return Literal(value: .nil)
         }
 
         if match(.number, .string) {

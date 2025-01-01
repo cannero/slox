@@ -1,10 +1,10 @@
 struct Token: Equatable {
     let type: TokenType
     let lexeme: String
-    let literal: Any?
+    let literal: LiteralValue?
     let line: Int
 
-    init(type: TokenType, lexeme: String, line: Int, literal: Any? = nil) {
+    init(type: TokenType, lexeme: String, line: Int, literal: LiteralValue? = nil) {
         self.type = type
         self.lexeme = lexeme
         self.line = line
@@ -20,6 +20,6 @@ struct Token: Equatable {
 
 extension Token: CustomStringConvertible {
     var description: String {
-        return "\(type) \(lexeme) \(literal ?? "")"
+        return "\(type) \(lexeme)"
     }
 }

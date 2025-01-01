@@ -7,6 +7,7 @@ func scan(_ source: String, _ expectedOutput: [Token]) {
     let res = scanner.scanTokens()
 
     #expect(res == expectedOutput)
+    #expect(scanner.errorDuringScanning() == false)
 }
 
 @Test func ScanOpenBrace() {
@@ -27,13 +28,16 @@ func scan(_ source: String, _ expectedOutput: [Token]) {
 }
 
 @Test func ScanCommentAndSlash() {
+    // this linebreak does not behave like when read from a file,
+    // then CRLF is one character
     let source = """
     // this is a comment
+
     /
     """
     let expectedOutput = [
-        Token(type: .slash, lexeme: "/", line: 2),
-        Token(type: .eof, lexeme: "", line: 2)]
+        Token(type: .slash, lexeme: "/", line: 3),
+        Token(type: .eof, lexeme: "", line: 3)]
     scan(source, expectedOutput)
 }
 

@@ -4,6 +4,7 @@ class Scanner {
     var currentIndex: String.Index
     var currentLine: Int = 1
     var tokens: [Token] = []
+    var hasError = false
 
     init(_ source: String) {
         self.source = source
@@ -11,8 +12,13 @@ class Scanner {
         self.currentIndex = source.startIndex
     }
 
+    func errorDuringScanning() -> Bool {
+        hasError
+    }
+
     func scanTokens() -> [Token] {
         tokens.removeAll()
+        hasError = false
         while !isAtEnd {
             startIndex = currentIndex
             scanToken()
@@ -48,13 +54,15 @@ class Scanner {
                 addToken(.slash)
             }
         case " ", "\r", "\t": break
-        case "\n":
+        case "\n", "\r\n":
             currentLine += 1
         case "\"": readString()
         case _ where char.isDigit: readNumber()
         case _ where char.isLetter: readIdentifier()
         default:
-            error(currentLine, "unknown char \(char)")
+            hasError = true
+            let codepoints = char.utf8.map({String($0)}).joined(separator: ",")
+            error(currentLine, "unknown char '\(char)': \(codepoints)")
         }
     }
 
@@ -68,7 +76,7 @@ class Scanner {
         return char
     }
 
-    private func addToken(_ type: TokenType, _ literal: Any? = nil) {
+    private func addToken(_ type: TokenType, _ literal: LiteralValue? = nil) {
         tokens.append(Token(type: type, lexeme: currentLexeme, line: currentLine, literal: literal))
     }
 
@@ -99,15 +107,16 @@ class Scanner {
         }
 
         if isAtEnd {
+            hasError = true
             error(currentLine, "Unterminated string")
             return
         }
 
-        let strValue = currentLexeme.dropFirst()
+        let strValue = String(currentLexeme.dropFirst())
         // closing "
         _ = advance()
         
-        addToken(.string, strValue)
+        addToken(.string, .string(strValue))
     }
 
     // only integers
@@ -116,7 +125,7 @@ class Scanner {
             _ = advance()
         }
 
-        addToken(.number, Int(currentLexeme)!)
+        addToken(.number, .int(Int(currentLexeme)!))
     }
 
     private func readIdentifier() {
