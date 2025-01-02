@@ -1,16 +1,28 @@
 class Interpreter {
-    func interpret(expression: Expr) throws -> ResultValue {
+    private var environment = Environment()
+    
+    func interpret(statements: [Stmt]) throws {
         do {
-            let value = try evaluate(expression)
-            return value
+            for statement in statements {
+                try execute(statement)
+            }
         } catch let error as RuntimeError {
             runtimeError(error: error)
-            return .nil
         }
+    }
+
+    func evaluate(_ expr: Expr) throws -> ResultValue {
+        try expr.accept(visitor: self)
     }
 }
 
 extension Interpreter : ExprVisitor {
+    func visitAssignExpr(_ expr: Assign) throws -> ResultValue {
+        let value = try evaluate(expr.value)
+        try environment.assign(name: expr.name, value: value)
+        return value;
+    }
+
     func visitBinaryExpr(_ expr: Binary) throws -> ResultValue {
         let left = try evaluate(expr.left)
         let right = try evaluate(expr.right)
@@ -79,8 +91,8 @@ extension Interpreter : ExprVisitor {
         }
     }
 
-    private func evaluate(_ expr: Expr) throws -> ResultValue {
-        try expr.accept(visitor: self)
+    func visitVariableExpr(_ expr: Variable) throws -> ResultValue {
+        return try environment.get(name: expr.name)
     }
 
     private func isTruthy(_ object: ResultValue) -> Bool {
@@ -91,7 +103,7 @@ extension Interpreter : ExprVisitor {
         }
     }
 
-    private func opToArithmetic(_ op: Token) throws -> ((Int, Int) -> Int) {
+    private func opToArithmetic(_ op: Token) throws -> (Int, Int) -> Int {
         switch op.type {
         case .minus: (-)
         case .slash: (/)
@@ -102,7 +114,7 @@ extension Interpreter : ExprVisitor {
         }
     }
 
-    private func opToComparison(_ op: Token) throws -> ((Int, Int) -> Bool) {
+    private func opToComparison(_ op: Token) throws -> (Int, Int) -> Bool {
         switch op.type {
         case .greater: (>)
         case .greaterEqual: (>=)
@@ -110,6 +122,47 @@ extension Interpreter : ExprVisitor {
         case .lessEqual: (<=)
         default:
             throw RuntimeError(op, "unknown comparison operation")
+        }
+    }
+}
+
+extension Interpreter : StmtVisitor {
+    func visitBlockStmt(_ stmt: Block) throws -> Void {
+        try executeBlock(stmt.statements, Environment(enclosing: environment))
+    }
+
+    func visitExpressionStmt(_ stmt: Expression) throws -> Void {
+        _ = try evaluate(stmt.expression)
+    }
+
+    func visitPrintStmt(_ stmt: Print) throws -> Void {
+        let value = try evaluate(stmt.expression);
+        print(value);
+    }
+
+    func visitVarStmt(_ stmt: Var) throws -> Void {
+        var value: ResultValue? = nil;
+        if let initializer = stmt.initializer {
+            value = try evaluate(initializer)
+        }
+
+        environment.define(name: stmt.name.lexeme, value: value)
+    }
+
+    private func execute(_ stmt: Stmt) throws {
+        try stmt.accept(visitor: self)
+    }
+
+    private func executeBlock(_ statements: [Stmt], _ environment: Environment) throws {
+        let previous = self.environment
+        defer {
+            self.environment = previous
+        }
+
+        self.environment = environment
+
+        for statement in statements {
+            try execute(statement)
         }
     }
 }

@@ -10,17 +10,99 @@ class Parser {
         self.tokens = tokens
     }
 
-    func parse() throws -> Expr? {
+    func parse() throws -> [Stmt] {
+        var statements: [Stmt] = []
+        while !isAtEnd {
+            if let statement = try declaration() { 
+                statements.append(statement)
+            }
+        }
+
+        return statements
+    }
+
+    private func declaration() throws -> Stmt? {
         do {
-            return try expression();
-        } catch ParseError.invalidSyntax {
+            if match(.var) {
+                return try varDeclaration()
+            }
+
+            return try statement();
+        } catch is ParseError {
+            synchronize()
             return nil;
         }
     }
 
-    private func expression() throws -> Expr {
-        try equality()
+    private func varDeclaration() throws -> Stmt {
+        let name = try consume(.identifier, "Expect variable name.")
+
+        var initializer: Expr? = nil
+        if match(.equal) {
+            initializer = try expression()
+        }
+
+        try consume(.semicolon, "Expect ';' after variable declaration.")
+        return Var(name: name, initializer: initializer)
     }
+
+    private func statement() throws -> Stmt {
+        if match(.print) {
+            return try printStatement()
+        }
+
+        if match(.leftBrace) {
+            return Block(statements: try block())
+        }
+
+        return try expressionStatement()
+    }
+
+    private func printStatement() throws -> Stmt {
+        let value = try expression()
+        try consume(.semicolon, "Expect ';' after value.")
+        return Print(expression: value)
+    }
+
+    private func block() throws -> [Stmt] {
+        var statements: [Stmt] = []
+        while !check(.rightBrace) && !isAtEnd {
+            if let statement = try declaration() {
+                statements.append(statement)
+            }
+        }
+
+        try consume(.rightBrace, "Expect '}' after block")
+        return statements
+    }
+
+    private func expressionStatement() throws -> Stmt {
+        let expr = try expression()
+        try consume(.semicolon, "Expect ';' after expression.")
+        return Expression(expression: expr)
+    }
+
+    private func expression() throws -> Expr {
+        try assignment()
+    }
+
+    private func assignment() throws -> Expr {
+        let expr = try equality();
+
+        if match(.equal) {
+            let equals = previous
+            let value = try assignment()
+
+            if let variable = expr as? Variable {
+                let name = variable.name
+                return Assign(name: name, value: value)
+            }
+
+            throw error(equals, "Invalid assignment target.")
+        }
+
+    return expr;
+  }
 
     private func equality() throws -> Expr {
         var expr = try comparison()
@@ -93,12 +175,16 @@ class Parser {
         }
 
         if match(.number, .string) {
-            return Literal(value: previous.literal);
+            return Literal(value: previous.literal)
+        }
+
+        if match(.identifier) {
+            return Variable(name: previous)
         }
 
         if match(.leftParen) {
             let expr = try expression()
-            _ = try consume(.rightParen, "Expect ')' after expression.")
+            try consume(.rightParen, "Expect ')' after expression.")
             return Grouping(expression: expr)
         }
 
@@ -147,6 +233,7 @@ class Parser {
         }
     }
 
+    @discardableResult
     private func consume(_ type: TokenType, _ message: String) throws -> Token {
         if check(type) {
             advance()

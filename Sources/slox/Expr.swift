@@ -4,12 +4,15 @@ import Foundation
 
 protocol ExprVisitor {
     associatedtype ExprVisitorReturn
+    func visitAssignExpr(_ expr: Assign) throws -> ExprVisitorReturn
     func visitBinaryExpr(_ expr: Binary) throws -> ExprVisitorReturn
     func visitGroupingExpr(_ expr: Grouping) throws -> ExprVisitorReturn
     func visitLiteralExpr(_ expr: Literal) throws -> ExprVisitorReturn
     func visitUnaryExpr(_ expr: Unary) throws -> ExprVisitorReturn
+    func visitVariableExpr(_ expr: Variable) throws -> ExprVisitorReturn
 }
 
+// must be a base class, implementing Equatable does not work with protocol
 class Expr : Equatable {
    func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
         preconditionFailure("base class cannot be used directly")
@@ -21,6 +24,30 @@ class Expr : Equatable {
 
     func isEqualTo (_ other: Expr) -> Bool {
         preconditionFailure("base class cannot be used directly")
+    }
+}
+
+class Assign : Expr {
+    let name: Token
+    let value: Expr
+
+    init(name: Token, value: Expr) {
+        self.name = name
+        self.value = value
+    }
+
+    override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
+        try visitor.visitAssignExpr(self)
+    }
+
+    override func isEqualTo (_ other: Expr) -> Bool {
+        guard let other = other as? Assign else {return false}
+        return self == other
+    }
+
+    static func == (lhs: Assign, rhs: Assign) -> Bool {
+        return lhs.name == rhs.name &&
+               lhs.value == rhs.value
     }
 }
 
@@ -41,9 +68,13 @@ class Binary : Expr {
 
     override func isEqualTo (_ other: Expr) -> Bool {
         guard let other = other as? Binary else {return false}
-        return left == other.left &&
-               op == other.op &&
-               right == other.right
+        return self == other
+    }
+
+    static func == (lhs: Binary, rhs: Binary) -> Bool {
+        return lhs.left == rhs.left &&
+               lhs.op == rhs.op &&
+               lhs.right == rhs.right
     }
 }
 
@@ -60,7 +91,11 @@ class Grouping : Expr {
 
     override func isEqualTo (_ other: Expr) -> Bool {
         guard let other = other as? Grouping else {return false}
-        return expression == other.expression
+        return self == other
+    }
+
+    static func == (lhs: Grouping, rhs: Grouping) -> Bool {
+        return lhs.expression == rhs.expression
     }
 }
 
@@ -77,7 +112,11 @@ class Literal : Expr {
 
     override func isEqualTo (_ other: Expr) -> Bool {
         guard let other = other as? Literal else {return false}
-        return value == other.value
+        return self == other
+    }
+
+    static func == (lhs: Literal, rhs: Literal) -> Bool {
+        return lhs.value == rhs.value
     }
 }
 
@@ -96,8 +135,33 @@ class Unary : Expr {
 
     override func isEqualTo (_ other: Expr) -> Bool {
         guard let other = other as? Unary else {return false}
-        return op == other.op &&
-               right == other.right
+        return self == other
+    }
+
+    static func == (lhs: Unary, rhs: Unary) -> Bool {
+        return lhs.op == rhs.op &&
+               lhs.right == rhs.right
+    }
+}
+
+class Variable : Expr {
+    let name: Token
+
+    init(name: Token) {
+        self.name = name
+    }
+
+    override func accept<V: ExprVisitor, R>(visitor: V) throws -> R where R == V.ExprVisitorReturn {
+        try visitor.visitVariableExpr(self)
+    }
+
+    override func isEqualTo (_ other: Expr) -> Bool {
+        guard let other = other as? Variable else {return false}
+        return self == other
+    }
+
+    static func == (lhs: Variable, rhs: Variable) -> Bool {
+        return lhs.name == rhs.name
     }
 }
 

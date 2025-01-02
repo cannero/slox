@@ -6,11 +6,11 @@ public func run(source: String) throws {
         return
     }
     let parser = Parser(tokens)
-    let expr = try parser.parse()!
+    let stmts = try parser.parse()
 
     let interpreter = Interpreter()
-    let result = try interpreter.interpret(expression: expr)
-    print(result)
+    try interpreter.interpret(statements: stmts)
+    //print(result)
     // for token in tokens {
     //     print(token)
     // }

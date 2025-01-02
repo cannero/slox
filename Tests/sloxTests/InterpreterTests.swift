@@ -3,7 +3,7 @@ import Testing
 
 func interpret(_ input: Expr, _ expectedOutput: ResultValue) throws {
     let interpreter = Interpreter()
-    let res = try interpreter.interpret(expression: input)
+    let res = try interpreter.evaluate(input)
 
     #expect(res == expectedOutput)
 }

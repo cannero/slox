@@ -4,10 +4,19 @@ open System.IO
 [<Literal>]
 let BasePath = "../Sources/slox"
 
-let TypesExpr = ["Binary   : Expr left, Token op, Expr right";
+let TypesExpr = ["Assign   : Token name, Expr value";
+                 "Binary   : Expr left, Token op, Expr right";
                  "Grouping : Expr expression";
                  "Literal  : LiteralValue? value";
-                 "Unary    : Token op, Expr right"]
+                 "Unary    : Token op, Expr right";
+                 "Variable : Token name";
+                 ]
+
+let TypesStmt = ["Block      : [Stmt] statements";
+                 "Expression : Expr expression";
+                 "Print      : Expr expression";
+                 "Var        : Token name, Expr? initializer";
+                 ]
 
 let splitType (typestring: string) =
     let parts = typestring.Split(':')
@@ -19,8 +28,8 @@ let splitIntoFieldTypeAndName (fields: string) =
                   let xs = x.Trim().Split(' ')
                   xs[0], xs[1])
 
-let addVisitFunction (writer: TextWriter) baseName (className, _) =
-    writer.Write($$"""    func visit{{className}}{{baseName}}(_ expr: {{className}}) """)
+let addVisitFunction (writer: TextWriter) (baseName: string) (className, _) =
+    writer.Write($$"""    func visit{{className}}{{baseName}}(_ {{baseName.ToLower()}}: {{className}}) """)
     writer.WriteLine($$"""throws -> {{baseName}}VisitorReturn""")
 
 let defineVisitor (writer: TextWriter) baseName types =
@@ -62,12 +71,18 @@ let defineType (writer: TextWriter) baseName (className, (fields: string)) =
 
     writer.WriteLine($$"""    override func isEqualTo (_ other: {{baseName}}) -> Bool {""")
     writer.WriteLine($$"""        guard let other = other as? {{className}} else {return false}""")
+    writer.WriteLine($$"""        return self == other""")
+    writer.WriteLine($$"""    }""")
+
+    writer.WriteLine("")
+    writer.WriteLine($$"""    static func == (lhs: {{className}}, rhs: {{className}}) -> Bool {""")
     let comparison =
         typeAndName
         |> Array.map snd
-        |> Array.map (fun n -> $$"""{{n}} == other.{{n}}""")
+        |> Array.map (fun n -> $$"""lhs.{{n}} == rhs.{{n}}""")
         |> String.concat $$""" &&{{Environment.NewLine}}               """
     writer.WriteLine($$"""        return {{comparison}}""")
+
     writer.WriteLine($$"""    }""")
 
     writer.WriteLine("}")
@@ -82,7 +97,7 @@ let defineAst baseName types =
 
     defineVisitor writer baseName types
 
-    // must be a base class, implement Equatable does not work with protocol
+    writer.WriteLine("// must be a base class, implementing Equatable does not work with protocol")
     writer.WriteLine($$"""class {{baseName}} : Equatable {""")
     writer.WriteLine($$"""   func accept<V: {{baseName}}Visitor, R>(visitor: V) throws -> R where R == V.{{baseName}}VisitorReturn {""")
     writer.WriteLine("        preconditionFailure(\"base class cannot be used directly\")")
@@ -106,3 +121,4 @@ let defineAst baseName types =
 
 
 defineAst "Expr" TypesExpr
+defineAst "Stmt" TypesStmt
